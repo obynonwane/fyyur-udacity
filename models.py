@@ -24,8 +24,28 @@ class Venue(db.Model):
     genres = db.Column(db.String(120))
     seeking_description = db.Column(db.String(120))
     seeking_talent = db.Column(db.String(120))
+    shows = db.relationship('Show', backref='venue', lazy=True, cascade='all, delete-orphan')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    @property 
+    def upcoming_shows(self):
+        upcoming_shows = [show for show in self.shows if show.start_time > datetime.now()]
+        return upcoming_shows
+
+    @property
+    def num_upcoming_shows(self):
+        return len(self.upcoming_shows)
+
+    @property
+    def past_shows(self):
+        past_shows = [show for show in self.shows if show.start_time < datetime.now()]
+        return past_shows
+
+    @property
+    def num_past_shows(self):
+        return len(self.past_shows)
+
+   
 
 
 
@@ -43,6 +63,38 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     seeking_description = db.Column(db.String(120))
     seeking_venue = db.Column(db.String(120))
+    shows = db.relationship('Show', backref='artist', lazy=True)
+    created_on = db.Column(db.DateTime, default=datetime.utcnow)
+    albums = db.relationship('Album', backref='artist', lazy=True)
+
+    @property
+    def upcoming_shows(self):
+        upcoming_shows = [show for show in self.shows if show.start_time > datetime.now()]
+        return upcoming_shows
+        
+    @property
+    def num_upcoming_shows(self):      
+        return len(self.upcoming_shows)
+        
+    @property
+    def past_shows(self):
+        past_shows = [show for show in self.shows if show.start_time < datetime.now()]
+        return past_shows
+        
+    @property
+    def num_past_shows(self):
+        return len(self.past_shows)
+
+    @property
+    def albums_songs(self):
+        album_data = []
+        for album in self.albums:
+            album_data.append({
+                'id': album.id,
+                'name': album.name,
+                'songs': album.songs
+            })
+        return album_data
 
 
 class Show(db.Model):
@@ -51,3 +103,20 @@ class Show(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
     venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
     start_time = db.Column(db.DateTime, nullable=False)
+
+
+class Album(db.Model):
+  __tablename__ = 'album'
+
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String)
+  artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
+  songs = db.relationship('Song', backref='album', lazy=True)
+
+
+class Song(db.Model):
+  __tablename__ = 'song'
+
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String)
+  album_id = db.Column(db.Integer, db.ForeignKey('album.id'), nullable=False)

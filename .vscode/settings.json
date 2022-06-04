@@ -1,3 +1,7 @@
 {
-    "python.pythonPath": "/Users/mac/Documents/udacity-session-lead/cd0046-SQL-and-Data-Modeling-for-the-Web/env/bin/python3.8"
+    "python.pythonPath": "/Users/mac/Documents/udacity-session-lead/cd0046-SQL-and-Data-Modeling-for-the-Web/env/bin/python3.8",
+    "files.associations": {
+        "*.rsh": "javascript"
+    },
+    "javascript.suggest.completeFunctionCalls": true
 }
