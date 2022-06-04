@@ -358,6 +358,8 @@ def show_artist(artist_id):
       return redirect(url_for('artists'))
 
     pastEvents = []
+    upcomingEvents = []
+
     for show in artist.past_shows:    
       venue = getVenueById(show.venue_id)
       venueDet = {
@@ -368,7 +370,7 @@ def show_artist(artist_id):
       }
       pastEvents.append(venueDet)
 
-    upcomingEvents = []
+   
     for show in artist.upcoming_shows:
       venue = getVenueById(show.venue_id)
       getEventDetail = {
@@ -533,28 +535,30 @@ def edit_venue_submission(venue_id):
 #  Create Artist
 #  ----------------------------------------------------------------
 
-@app.route('/artists/create', methods=['GET'])
-def create_artist_form():
-  form = ArtistForm()
-  return render_template('forms/new_artist.html', form=form)
-
-@app.route('/artists/create', methods=['POST'])
-def create_artist_submission():
-
+def createArtistRecord(name, 
+          city,
+          state,
+          phone,
+          genres,
+          facebook_link,
+          image_link,
+          website_link,
+          seeking_venue,
+          seeking_description):
     error = False
 
     try:
         artist = Artist(
-          name=request.form['name'], 
-          city=request.form['city'],
-          state=request.form['state'],
-          phone=request.form['phone'],
-          genres=request.form['genres'],
-          facebook_link=request.form['facebook_link'],
-          image_link=request.form['image_link'],
-          website_link=request.form['website_link'],
-          seeking_venue=request.form['seeking_venue'],
-          seeking_description=request.form['seeking_description'],
+          name=name, 
+          city=city,
+          state=state,
+          phone=phone,
+          genres=genres,
+          facebook_link=facebook_link,
+          image_link=image_link,
+          website_link=website_link,
+          seeking_venue=seeking_venue,
+          seeking_description=seeking_description
           )
         db.session.add(artist)    
         db.session.commit()
@@ -568,53 +572,73 @@ def create_artist_submission():
         if error:
             abort (400)
         else:
-            
-          # called upon submitting the new artist listing form
-          # TODO: insert form data as a new Venue record in the db, instead
-          # TODO: modify data to be the data object returned from db insertion
-
           # on successful db insert, flash success
           flash('Artist ' + request.form['name'] + ' was successfully listed!')
-          # TODO: on unsuccessful db insert, flash an error instead.
-          # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
           return render_template('pages/home.html')
+
+@app.route('/artists/create', methods=['GET'])
+def create_artist_form():
+  form = ArtistForm()
+  return render_template('forms/new_artist.html', form=form)
+
+@app.route('/artists/create', methods=['POST'])
+def create_artist_submission():
+
+    name=request.form['name']
+    city=request.form['city']
+    state=request.form['state']
+    phone=request.form['phone']
+    genres=request.form['genres']
+    facebook_link=request.form['facebook_link']
+    image_link=request.form['image_link']
+    website_link=request.form['website_link']
+    seeking_venue=request.form['seeking_venue']
+    seeking_description=request.form['seeking_description']
+
+    return createArtistRecord(name, 
+          city,
+          state,
+          phone,
+          genres,
+          facebook_link,
+          image_link,
+          website_link,
+          seeking_venue,
+          seeking_description)
 
 
 #  Shows
 #  ----------------------------------------------------------------
 
-@app.route('/shows')
-def shows():
-  # displays list of shows at /shows
-  # TODO: replace with real venues data.
-  data = db.session.query(Show).join(Venue, (Venue.id == Show.venue_id)).join(Artist, (Artist.id == Show.artist_id)).with_entities(Show.venue_id, Venue.name.label('venue_name'), Show.artist_id, Artist.name.label('artist_name'), Artist.image_link.label('artist_image_link'), Show.start_time).all()
+def getShows():
+  return db.session.query(Show).join(Venue, (Venue.id == Show.venue_id)).join(Artist, (Artist.id == Show.artist_id)).with_entities(Show.venue_id, Venue.name.label('venue_name'), Show.artist_id, Artist.name.label('artist_name'), Artist.image_link.label('artist_image_link'), Show.start_time).all()
 
-  def formatData(result):
+def formatShowData(result):
     result = dict(zip(result.keys(), result))
     result['start_time'] = str(result['start_time'])
     return result
 
-  data = [formatData(result) for result in data]
+@app.route('/shows')
+def shows():
+  data = getShows()
+
+  data = [formatShowData(result) for result in data]
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
 def create_shows():
-  # renders form. do not touch.
   form = ShowForm()
   return render_template('forms/new_show.html', form=form)
 
-@app.route('/shows/create', methods=['POST'])
-def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead
+def createShowRecord(venue_id, artist_id, start_time):
     error = False
     try:
       
         show = Show(
-          venue_id=request.form['venue_id'], 
-          artist_id=request.form['artist_id'],
-          start_time=request.form['start_time'],
-          )
+          venue_id=venue_id,
+          artist_id=artist_id,
+          start_time=start_time
+        )
         db.session.add(show)    
         db.session.commit()
     except:
@@ -628,11 +652,17 @@ def create_show_submission():
             abort (400)
         else:  
             # on successful db insert, flash success
-            flash('Show was successfully listed!')
-            # TODO: on unsuccessful db insert, flash an error instead.
-            # e.g., flash('An error occurred. Show could not be listed.')
-            # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+            flash('Show was successfully created!')
             return render_template('pages/home.html')
+
+
+@app.route('/shows/create', methods=['POST'])
+def create_show_submission():
+    venue_id=request.form['venue_id'], 
+    artist_id=request.form['artist_id'],
+    start_time=request.form['start_time'],
+    return createShowRecord(venue_id, artist_id, start_time)
+   
 
 
 
