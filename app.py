@@ -287,70 +287,50 @@ def delete_venue(venue_id):
   # clicking that button delete it from the db then redirect the user to the homepage
   return None
 
+def getArtistList():
+  return Artist.query.with_entities(Artist.id, Artist.name).all()
+
+def formatArtist(allArtist):
+  return [dict(zip(artist.keys(), artist)) for artist in allArtist]
+
 #  Artists
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
-  # TODO: replace with real data returned from querying the database
-  # replace with real data returned from querying the database
-  allArtist = Artist.query.with_entities(Artist.id, Artist.name).all()
-  data = [dict(zip(artist.keys(), artist)) for artist in allArtist]
+  allArtist = getArtistList()
+  data = formatArtist(allArtist)
   return render_template('pages/artists.html', artists=data)
+
+
+def returnSerchArtistresult(search_term):
+  artist = Artist.query.filter(Artist.name.ilike('%' + search_term + '%'))
+  return artist
+
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
  
     search_term = request.form.get('search_term', '').strip()
-
-    artists = Artist.query.filter(Artist.name.ilike('%' + search_term + '%'))
+    artists = returnSerchArtistresult(search_term)
 
     data = []
     for artist in artists:
-      data.append({
+      artistDet = {
         "id": artist.id,
         "name": artist.name,
         "num_upcoming_shows": artist.num_upcoming_shows
-      })
+      }
+      data.append(artistDet)
 
-    count = len(data)
     response = {
-      "count": count,
+      "count": len(data),
       "data": data
     }
     return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
-@app.route('/artists/<int:artist_id>')
-def show_artist(artist_id):
-  # shows the artist page with the given artist_id
-  # TODO: replace with real artist data from the artist table, using artist_id
-    artist = Artist.query.get(artist_id)
 
-    if not artist:
-      flash("Artist "+ str(artist_id) +"  not found!", category='error')
-      return redirect(url_for('artists'))
-
-    pastEvents = []
-    for show in artist.past_shows:    
-      venue = Venue.query.get(show.venue_id)
-      pastEvents.append({
-        "venue_id": venue.id,
-        "venue_name": venue.name,
-        "venue_image_link": venue.image_link,
-        "start_time": str(show.start_time)
-      })
-
-    upcomingEvents = []
-    for show in artist.upcoming_shows:
-      venue = Venue.query.get(show.venue_id)
-      upcomingEvents.append({
-        "venue_id": venue.id,
-        "venue_name": venue.name,
-        "venue_image_link": venue.image_link,
-        "start_time": str(show.start_time)
-      })
-
-    data = {
+def getArtistDet(artist, pastEvents, upcomingEvents):
+  return {
       "id": artist.id,
       "name": artist.name,
       "genres": artist.genres,
@@ -367,6 +347,39 @@ def show_artist(artist_id):
       "past_shows": pastEvents,
       "upcoming_shows": upcomingEvents,
     }
+
+  
+@app.route('/artists/<int:artist_id>')
+def show_artist(artist_id):
+    artist = getArtistById(artist_id)
+
+    if not artist:
+      flash("Artist not found!", category='error')
+      return redirect(url_for('artists'))
+
+    pastEvents = []
+    for show in artist.past_shows:    
+      venue = getVenueById(show.venue_id)
+      venueDet = {
+        "venue_id": venue.id,
+        "venue_name": venue.name,
+        "venue_image_link": venue.image_link,
+        "start_time": str(show.start_time)
+      }
+      pastEvents.append(venueDet)
+
+    upcomingEvents = []
+    for show in artist.upcoming_shows:
+      venue = getVenueById(show.venue_id)
+      getEventDetail = {
+        "venue_id": venue.id,
+        "venue_name": venue.name,
+        "venue_image_link": venue.image_link,
+        "start_time": str(show.start_time)
+      }
+      upcomingEvents.append(getEventDetail)
+
+    data = getArtistDet(artist, upcomingEvents, pastEvents)
 
     return render_template('pages/show_artist.html', artist=data)
 
